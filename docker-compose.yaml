@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:13-alpine
+    container_name: "db"
+    volumes:
+      - ./volumes/postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    networks:
+      - car-rent-net
+
+      
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    volumes:
+      - ./volumes/pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - car-rent-net
+
+  script_executor:
+    container_name: "script_executor"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: ${RUN_COMMAND}
+    env_file:
+      - .env
+    volumes:
+      - ./:/script/
+    depends_on:
+      - db
+    tty: true
+    ports:
+      - "8080:8080"
+    networks:
+      - car-rent-net
+
+networks:
+  car-rent-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.138.0.0/24
